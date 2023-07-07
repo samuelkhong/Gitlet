@@ -105,7 +105,7 @@ public class CapersRepository {
      */
     public static void celebrateBirthday(String name) {
         String fileName = name + ".txt";
-        File dogFile = Utils.join(".capers", "dogs", fileName);
+        File dogFile = Utils.join("capers", "dogs", fileName);
 
         // if the name of the dog as a file exists, retrieve Dog
         if (dogFile.exists()) {

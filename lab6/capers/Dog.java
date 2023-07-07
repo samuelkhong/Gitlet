@@ -43,7 +43,7 @@ public class Dog implements Serializable {
     public static Dog fromFile(String name) {
         // TODO (hint: look at the Utils file)
         String fileName = name + ".txt";
-        File dogFile = Utils.join(".capers", "dogs", fileName);
+        File dogFile = Utils.join("capers", "dogs", fileName);
 
             // if the name of the dog as a file exists, retrieve Dog
             if (dogFile.exists()) {
@@ -77,7 +77,7 @@ public class Dog implements Serializable {
         // TODO (hint: don't forget dog names are unique)
 
         // Create the directory path for dog files
-        File dogDirectory = new File(".capers/dogs");
+        File dogDirectory = new File("capers/dogs");
         if (!dogDirectory.exists()) {
             if (!dogDirectory.mkdirs()) {
                 System.out.println("Failed to create dog directory.");
@@ -86,7 +86,7 @@ public class Dog implements Serializable {
         }
 
         // create path to the breed of dog
-        File dogFile = Utils.join(".capers", "dogs", this.name + ".txt"); // name of file of specific dog
+        File dogFile = Utils.join("capers", "dogs", this.name + ".txt"); // name of file of specific dog
 
         try {
             if (!dogFile.exists()) {
