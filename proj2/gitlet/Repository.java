@@ -25,5 +25,26 @@ public class Repository {
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
+    public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
+    public static final File DIR_DIR = join(GITLET_DIR, "dir");
+    public static final File HEAD = join(GITLET_DIR, "HEAD");
+    public static final File index = join(GITLET_DIR, "index");
+
+    public static final File BLOBS_DIR = join(OBJECTS_DIR, "blobs");
+    public static final File COMMIT_DIR = join(OBJECTS_DIR, "commits");
+    public static final File BLOBS_DIR = join(OBJECTS_DIR, "commitTree");
+
+
     /* TODO: fill in the rest of this class. */
+
+    public void init() {
+        if (!GITLET_DIR.exists()) {
+            GITLET_DIR.mkdir();
+        }
+        if (!OBJECTS_DIR.exists()) {
+            OBJECTS_DIR.mkdir();
+        }
+
+
+    }
 }

@@ -18,9 +18,19 @@ public class Commit {
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided one example for `message`.
      */
+    String name;
+    Date date;
+    String parent;
+    String commitTree;
 
     /** The message of this Commit. */
     private String message;
 
     /* TODO: fill in the rest of this class. */
+    Commit(String name, Date date, String parent, String message) {
+        this.name = name;
+        this.date = date;
+        this.parent = parent;
+        this.message = message;
+    }
 }
