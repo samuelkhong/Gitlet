@@ -59,7 +59,7 @@ public class Commit implements Serializable {
 
             // create a SHA hash using all meta data found in commit
             String concatenatedBlobs =  sumBlobs(this.blob); // sums all the blobs into a large string
-            this.hash = Utils.sha1(name, date.toString(), message, concatenatedBlobs);
+            this.hash = Utils.sha1(name, date.toString(), message, concatenatedBlobs, parent);
         }
         // first commit upon intialization. Creates sentinel commit
         else {
