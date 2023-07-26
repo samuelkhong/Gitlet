@@ -1,74 +1,94 @@
 package gitlet;
 
-// TODO: any imports you need here
-
-import sun.nio.ch.Util;
-
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
+ *  Commit object creates a snapshot of all files found in the current working directory that are
+ *  tracked using gitlet.add(). The commit object consist of the metadata including the User, date
+ *  of commit, String Hash of the parent commit and String message attached to the commit. The commit
+ *  also stores String references to the SHA-1 hashses of obects that have been tracked.
  *
- *  @author TODO
+ *
+ *  @author Samuel Khong
  */
 public class Commit implements Serializable {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
 
     String hash;
-    String name; // name
-    Date date; // date of the commit if first commit then use start date
+    String name = "samuel"; // name of the user hardcoded for now
+    String timeStamp; // date of the commit if first commit then use start date
     String parent; // SHA-1 value of previous commit
 
-    Map<String, String> blob; //Key:path, Value:SHA-1
+    Map<String, String> blob = new HashMap<String, String>(); //Key:path, Value:SHA-1
 
     /** The message of this Commit. */
     private String message;
 
     /* TODO: fill in the rest of this class. */
-    public Commit(String name, Date date, String parent, String message) {
-        this.name = name;
-        this.date = date;
-        this.parent = parent;
+    public Commit(String parent, String message) {
         this.message = message;
-        this.blob = new HashMap<String, String>();
+        this.parent = parent;
+
+        long currentTimeMillis = System.currentTimeMillis();
+
+        // Create a Date object using the current system time
+        Date currentDate = new Date(currentTimeMillis);
+        this.timeStamp = currentDate.toString();
 
         // if not the first commit ie has parents check for blobs
         if (this.parent != null) {
 
             // load the previous commit
-            Commit previousCommmit = Commit.loadCommit(this.parent);
+            String prevHash = getPrevCommit();
+            Commit previousCommmit = loadCommit(prevHash);
             // copy all blobs of the previous commit to this.commit
-            this.blob.putAll(previousCommmit.blob);
+            if (!previousCommmit.blob.isEmpty()) {
+                this.blob.putAll(previousCommmit.blob);
+            }
+            // check CWD list to see if any files were removed and remove them from this.blobs
+            List<String> currentFiles = Utils.plainFilenamesIn(Repository.CWD);
+            // iterate through keyset and see if key is not found in current files list
+
+            for (String key : blob.keySet()) {
+                if (!currentFiles.contains(key)) {
+                    this.blob.remove(key);
+                }
+            }
+
             // iterate through index. For each file found, replace value in map with new hash
+            // if previous file key is found replace its hash. If new file, add key and hash to map
+            Index currentIndex = Index.loadIndex();
+            Map<String, String> indexMap = currentIndex.getIndexMap();
+            for (String key : indexMap.keySet()) {
+                blob.put(key, indexMap.get(key));
+            }
 
-            // remove any files that were posed to be removed in the index
+            // clear out index after adding all files
+            Index.clearIndex();
 
-            // clear out index
 
             // create a SHA hash using all meta data found in commit
             String concatenatedBlobs =  sumBlobs(this.blob); // sums all the blobs into a large string
-            this.hash = Utils.sha1(name, date.toString(), message, concatenatedBlobs, parent);
+            this.hash = Utils.sha1(name, timeStamp, message, concatenatedBlobs, parent);
         }
         // first commit upon intialization. Creates sentinel commit
         else {
-            this.date = new Date(0);
-            this.hash = Utils.sha1(name, date.toString());
+            this.timeStamp = new Date(0).toString(); // if first commit, sets default date
+            this.hash = Utils.sha1(name, timeStamp);
         }
 
         // save the commit object
         this.saveCommit();
+
+        // update the current branch so that it points to this commit
+        String head = Utils.readContentsAsString(Repository.HEAD_FILE);
+        File currentBranch = new File(head);
+        Utils.writeContents(currentBranch, this.hash);
+
     }
 
 
@@ -80,64 +100,27 @@ public class Commit implements Serializable {
         }
 
         StringBuilder concatenatedKeys = new StringBuilder();
-        // iterate through all key and pull out
+        // iterate through all file and add the SHA hashes into one string
         for (String file : blobs.keySet()) {
             concatenatedKeys.append(blobs.get(file));
         }
 
+        // return the concatenated string builder of hashes as a string
         return concatenatedKeys.toString();
     }
 
-//    private Map<String, String> SHAtoCommit(String SHA) {
-//        File commit = Utils.join(Repository.COMMIT_DIR, SHA);
-//        if (commit.exists()) {
-//            Class<Map> mapClass = Map.class;
-//            return Utils.readObject(commit, mapClass);
-//        }
-//
-//    }
 
+    // creates a file named commit hash with serialized commit object data in  .gitlet/objects/commtis
     public void saveCommit() {
 
-        // Create the directory path for commit files
-        File commitDirectory = Repository.COMMIT_DIR;
-        if (!commitDirectory.exists()) {
-            if (!commitDirectory.mkdirs()) {
-                System.out.println("Failed to create dog directory.");
-                return;
-            }
-        }
-
-        // calculate the hashValue of this commit
-        //this.hash = Utils.sha1(name, date.toString(), parent)
-
-        // create path to the breed of dog
-        File commitFile = Utils.join(commitDirectory, this.hash); // name of file of specific dog
-
-        try {
-            // check if commit has been created before
-            if (!commitFile.exists()) {
-                if (commitFile.createNewFile()) {
-                    System.out.println("File created successfully.");
-                } else {
-                    System.out.println("Failed to create the file.");
-                    return;
-                }
-            }
-
-            // Write the commit object to the file
-            Utils.writeObject(commitFile, this);
-            System.out.println("commit saved successfully.");
-
-        }
-
-
-        catch (IOException e) {
-            System.out.println("An error occurred: " + e.getMessage());
-        }
+        // create path to the commit
+        File commitFile = Utils.join(Repository.COMMIT_DIR, this.hash); // name of file of specific dog
+        Repository.createNewFile(commitFile);
+        Utils.writeObject(commitFile, this);
     }
 
-    public static Commit loadCommit(String commitSHA1) {
+    // returns the commit file if specific commit hash matches commit input STring
+    private Commit loadCommit(String commitSHA1) {
        //
         File SHAPath = Utils.join(Repository.COMMIT_DIR, commitSHA1);
         Commit retrievedCommit = null;
@@ -148,15 +131,24 @@ public class Commit implements Serializable {
         }
         else {
             System.out.println("Commit not found for SHA: " + commitSHA1);
-
         }
-
-
-
         return retrievedCommit;
-
-
     }
+
+    // return the content of the current HEADFILE
+    private String getPrevCommit() {
+        // get branch to where the current HEAD is pointing to
+        File file = new File(Utils.readContentsAsString(Repository.HEAD_FILE));
+        return Utils.readContentsAsString(file);
+    }
+
+
+
+
+
+
+
+
 
 
 

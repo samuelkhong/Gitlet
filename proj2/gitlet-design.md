@@ -25,6 +25,8 @@ of the current commit.
 ##### Helper Funcitons
 * String blobSum: returns a string of concatenated blob hash values as a single string. 
   * input: Map<String, String> blob
+* void saveCommit(): serializes the commit object to bits and saves it to disk
+* 
 
 
 
@@ -44,8 +46,7 @@ Used by main to select the correct Creates the necessary changes to the
 #### Functions
 1. saveCommit() will save the current commit onto disk. Commit object is serialiazable and will be converted to
 a stream of bits under the name of the Hash of the commit.
-2. 
-##### Init 
+
 
 
 
@@ -61,8 +62,8 @@ a stream of bits under the name of the Hash of the commit.
   and commits in respective subdirectories, Dirs stores the name of all branches.
   Creates the intial commit file and stores it into objects after hashing them. 
   Creates a subdirectory in Dir for master branch that points to the first commit.
-  Creates a pointer "HEAD" in ./git that points to the master branch
-  Creates an empty index file
+  Creates a file  "HEAD" in ./git Writes the string of the current path to current branch
+  Creates an empty index file in /.gitlet
 2. commit(): Checks the index to see if all files in the working directory match the files added in 
 the staging directory. Iterate through every hash in index to check /.git /object /objects / HASH exists.
 If it does not, print 
@@ -75,6 +76,12 @@ in the index. We will then update the current branch to have the SHA-1 of the la
    tracked at the current pathway are the same SHA hash. If it is, then it will add that hash to commitTree
    3. updateCurrentBranch(): finds the current branch your head pointer is looking at and change the file found in the branch
    to be the current SHA-1 HASH of the latest commit.
+3. Add: Adds file to index if a file is modified or previously unadded
+   1. Takes input in main with Gitlet.add as arg[0] and filename as arg[1] and passes argument to repository.add()
+   2. load any current index using index.load()
+   3. Get the hash of the file
+   4. Compares sha-1 hash and sees if any files contain that sha-1 hash
+   5. if not, create blob. Add to index
 ## Persistence
 #### Repository.add()
 1. Write blobs to disks. After a file is added to the staging area we will need will
