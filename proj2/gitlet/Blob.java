@@ -47,8 +47,9 @@ public class Blob implements Serializable {
                 Repository.createNewFile(blobFile);
             }
 
-            // Write the blob object to the file
-            Utils.writeObject(blobFile, this);
+            // Write blob to the file as byte array
+//            Utils.writeObject(blobFile, this);
+            Utils.writeContents(blobFile, content);
             System.out.println("blob saved successfully.");
     }
 }

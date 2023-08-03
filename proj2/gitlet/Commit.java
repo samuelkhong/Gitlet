@@ -2,10 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** Represents a gitlet commit object.
  *  Commit object creates a snapshot of all files found in the current working directory that are
@@ -18,20 +15,41 @@ import java.util.Map;
  */
 public class Commit implements Serializable {
 
-    String hash;
-    String name = "samuel"; // name of the user hardcoded for now
-    String timeStamp; // date of the commit if first commit then use start date
-    String parent; // SHA-1 value of previous commit
+    private String hash;
+    private String name = "samuel"; // name of the user hardcoded for now
+    private String timeStamp; // date of the commit if first commit then use start date
+    private List<String> parent; // SHA-1 value of previous commit
+    private String message; // message associated with commit
 
     Map<String, String> blob = new HashMap<String, String>(); //Key:path, Value:SHA-1
 
-    /** The message of this Commit. */
-    private String message;
+    // Getters for the properties
+    public String getHash() {
+        return hash;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getTimeStamp() {
+        return timeStamp;
+    }
+
+    public List<String> getParent() {
+        return parent;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
 
     /* TODO: fill in the rest of this class. */
     public Commit(String parent, String message) {
         this.message = message;
-        this.parent = parent;
+        this.parent = new ArrayList<String>();
+        this.parent.add(parent);
 
         long currentTimeMillis = System.currentTimeMillis();
 
@@ -43,12 +61,10 @@ public class Commit implements Serializable {
         if (this.parent != null) {
 
             // load the previous commit
-            String prevHash = getPrevCommit();
-            Commit previousCommmit = loadCommit(prevHash);
+            Commit lastCommit = getCurrentCommit();
             // copy all blobs of the previous commit to this.commit
-            if (!previousCommmit.blob.isEmpty()) {
-                this.blob.putAll(previousCommmit.blob);
-            }
+            this.blob.putAll(lastCommit.blob);
+
             // check CWD list to see if any files were removed and remove them from this.blobs
             List<String> currentFiles = Utils.plainFilenamesIn(Repository.CWD);
             // iterate through keyset and see if key is not found in current files list
@@ -79,6 +95,7 @@ public class Commit implements Serializable {
         else {
             this.timeStamp = new Date(0).toString(); // if first commit, sets default date
             this.hash = Utils.sha1(name, timeStamp);
+            this.message = "intial commit";
         }
 
         // save the commit object
@@ -88,7 +105,6 @@ public class Commit implements Serializable {
         String head = Utils.readContentsAsString(Repository.HEAD_FILE);
         File currentBranch = new File(head);
         Utils.writeContents(currentBranch, this.hash);
-
     }
 
 
@@ -120,8 +136,7 @@ public class Commit implements Serializable {
     }
 
     // returns the commit file if specific commit hash matches commit input STring
-    private Commit loadCommit(String commitSHA1) {
-       //
+    public static Commit loadCommit(String commitSHA1) {
         File SHAPath = Utils.join(Repository.COMMIT_DIR, commitSHA1);
         Commit retrievedCommit = null;
         // if the path to SHA hash of commit found, store in retrievedCommti object
@@ -135,22 +150,20 @@ public class Commit implements Serializable {
         return retrievedCommit;
     }
 
-    // return the content of the current HEADFILE
-    private String getPrevCommit() {
+    // return the branch as a string HEADFILE points to
+    private static String getPrevCommit() {
         // get branch to where the current HEAD is pointing to
         File file = new File(Utils.readContentsAsString(Repository.HEAD_FILE));
         return Utils.readContentsAsString(file);
     }
+    public static Commit getCurrentCommit() {
+        String latestCommitHash = getPrevCommit();
+        return loadCommit(latestCommitHash);
+    }
 
-
-
-
-
-
-
-
-
-
+    public String getBlobSHA(String filename) {
+        return this.blob.get(filename);
+    }
 
 
 }
