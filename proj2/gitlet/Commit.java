@@ -49,7 +49,7 @@ public class Commit implements Serializable {
     public Commit(String parent, String message) {
         this.message = message;
         this.parent = new ArrayList<String>();
-        this.parent.add(parent);
+        this.parent.add(0, parent);
 
         long currentTimeMillis = System.currentTimeMillis();
 
@@ -58,7 +58,7 @@ public class Commit implements Serializable {
         this.timeStamp = currentDate.toString();
 
         // if not the first commit ie has parents check for blobs
-        if (this.parent != null) {
+        if (this.parent.get(0) != null) {
 
             // load the previous commit
             Commit lastCommit = getCurrentCommit();
