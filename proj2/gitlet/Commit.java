@@ -62,28 +62,27 @@ public class Commit implements Serializable {
 
             // load the previous commit
             Commit lastCommit = getCurrentCommit();
-            // copy all blobs of the previous commit to this.commit
-            this.blob.putAll(lastCommit.blob);
-
-            // check CWD list to see if any files were removed and remove them from this.blobs
-            List<String> currentFiles = Utils.plainFilenamesIn(Repository.CWD);
-            // iterate through keyset and see if key is not found in current files list
-
-            for (String key : blob.keySet()) {
-                if (!currentFiles.contains(key)) {
-                    this.blob.remove(key);
-                }
-            }
-
-            // iterate through index. For each file found, replace value in map with new hash
-            // if previous file key is found replace its hash. If new file, add key and hash to map
+            // load current index, items staged and items to be deleted
             Index currentIndex = Index.loadIndex();
-            Map<String, String> indexMap = currentIndex.getIndexMap();
-            for (String key : indexMap.keySet()) {
-                blob.put(key, indexMap.get(key));
+            Map<String, String> stagedToAdd = currentIndex.getIndexMap();
+            List<String> stagedToDelete = currentIndex.getStagedForRemoval();
+
+            // set last commit blobs to this commit's blobs
+            this.blob = lastCommit.blob;
+
+            // iterate through stage files to be added and creates and add blobs to current commit
+            for (String file : stagedToAdd.keySet()) {
+                Blob blob = new Blob(file);
+                // add the newly created blob into the current blob list of the commit
+                this.blob.put(file, blob.getBlobHash());
             }
 
-            // clear out index after adding all files
+            // iterate through items staged for removal and remove them from blob list
+            for (String file : stagedToDelete) {
+                blob.remove(file);
+            }
+
+            // clear out index after editing everything staged to add and delete
             Index.clearIndex();
 
 

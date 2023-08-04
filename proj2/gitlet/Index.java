@@ -14,7 +14,7 @@ import java.util.Map;
 public class Index implements Serializable {
 
     private Map<String, String> indexMap; // key: fileName Value:SHA-1 of blob
-    private List<String> stagedForRemoval;
+    private List<String> stagedForRemoval; // list of files. Will remove file from being tracked in next commit
 
     Index() {
         indexMap = new HashMap<String, String>();
@@ -32,9 +32,8 @@ public class Index implements Serializable {
         // if not create a new blob and store add to index
         List<String> currentBlobList = Utils.plainFilenamesIn(Repository.BLOBS_DIR);
         if (!currentBlobList.contains(CWDfileSHA)) {
-            Blob blob = new Blob(fileName);
-            indexMap.put(fileName, blob.getBlobHash());
-
+            //Blob blob = new Blob(fileName);
+            indexMap.put(fileName, CWDfileSHA);
         }
 
         // check if file was not in last commit but blob previously created
