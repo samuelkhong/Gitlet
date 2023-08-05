@@ -81,26 +81,24 @@ public class Index implements Serializable {
         if (Repository.INDEX_FILE.exists()) {
             Repository.INDEX_FILE.delete();
             Repository.createNewFile(Repository.INDEX_FILE);
-            Index index = new Index(); // after clearing index, repopulate with new index
+            Index index = new Index(); // after clearing index, repopulate with new index and saves it
         }
     }
 
-    // removes file from index and updates index file in system
+    // removes file from items staged to be added and updates index file in system
     public void removeFile(String filename) {
-        if (indexMap.containsKey(filename)) {
-            indexMap.remove(filename);
-            saveIndex();
-        }
-        else {
-            System.out.println("File not found in index");
-        }
-        // if file tracked by previous commit add it to the removal list
+        // if files tracked by previous commit add it to the removal list
+        // stages files for removal on the next commit so no longer tracked
         Commit commit = Commit.getCurrentCommit();
         if (commit.blob.containsKey(filename)) {
             stagedForRemoval.add(filename);
-            saveIndex();
         }
 
+        // removes file if it is currently staged
+        if (indexMap.containsKey(filename)) {
+            indexMap.remove(filename);
+        }
+        saveIndex();
     }
 
 

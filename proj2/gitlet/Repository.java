@@ -126,7 +126,7 @@ public class Repository {
             System.out.println("No reason to remove the file.");
             return;
         }
-        // removes from index or stages files that are tracked as deleted
+        // removes file if staged and if tracked, stages for deletion
         index.removeFile(filename);
 
         // delete file from CWD
@@ -142,8 +142,8 @@ public class Repository {
         // loop until no parents and print information
         while (true) {
             printCommitInfo(commit);
-            // exits if parent is null ie reaches sentinel commit
-            if (commit.getParent() == null) {
+            // exits if first parent is null ie reaches sentinel commit
+            if (commit.getParent().get(0) == null) {
                 return;
             }
             List<String> parent = commit.getParent();

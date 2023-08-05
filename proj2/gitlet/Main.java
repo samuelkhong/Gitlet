@@ -15,6 +15,7 @@ public class Main {
             case "init":
                 Repository.init();
                 break;
+
             case "add":
                 Repository.add(args[1]);
                 break;
@@ -29,6 +30,10 @@ public class Main {
 
             case "log":
                 Repository.log();
+                break;
+
+            case "global-log":
+                Repository.globeLog();
                 break;
         }
     }

@@ -4,6 +4,11 @@
 
 ## Classes and Data Structures
 
+### Blob
+Stores the hash and file content of a tracked file as a bit array
+#### Instanec Variables
+* String hash: holds the SHA-1 hash for the file's content
+* Byte[] content: stores the file's content as a stream of bits
 
 ### Commit
 This class stores metadata of the  commit and
@@ -26,8 +31,15 @@ of the current commit.
 * String blobSum: returns a string of concatenated blob hash values as a single string. 
   * input: Map<String, String> blob
 * void saveCommit(): serializes the commit object to bits and saves it to disk
-* 
+* void loadCommit(): returns the correct input object given the commit hash
+  * input: String hash
 
+
+
+### Index:
+Stores all files currently tracked ready for commit.
+#### Instance Varaibles:
+* Map<String, String> indexmap: stores filenames and the blob hashes used for staging
 
 
 
@@ -39,50 +51,62 @@ Used by main to select the correct Creates the necessary changes to the
 ./gitlet directory to store or retrieve files.
 
 #### Instance Variables
-
 1. FILE CWD - File pathway to the current working directory
 2. FILE GITLET_DIR - File pathway to the gitlet folder
 
-#### Functions
-1. saveCommit() will save the current commit onto disk. Commit object is serialiazable and will be converted to
-a stream of bits under the name of the Hash of the commit.
+
+### Algorithms
+
+###  init():  
+Checks if the current working directory has a /.gitlet directory.
+Creates the necessary folders and files for git to operate.
+If current folder is not intialized, creates a new .gitlet directory and 2
+subdirectories "Objects", "Dirs". Objects stores all files including blobs,
+and commits in respective subdirectories, Dirs stores the name of all branches.
+Creates the intial commit file and stores it into objects after hashing them.
+Creates a subdirectory in Dir for master branch that points to the first commit.
+Creates a file  "HEAD" in ./git Writes the string of the current path to current branch
+Creates an empty index file in /.gitlet
+###  Commit(): Checks the index to see if all files in the working directory match the files added in
+the staging directory. Creates a new commit object using commit constructor adds metadata and adds all files in
+index to blob before clearing index
+
+##### Instance Variables
+1. String Message - user inputed message about updated string 
+2. String parent - String pointer to commit hash
 
 
+### add():
+Adds specified file with String filename into the index if not previously modified or unadded
+#### input variable
+* String filename
+##### Specs
+* takes filename and first check if the filename is found in CWD
+* Creates a hash of the current file. Compares it to list of blob hashes
+* if new hash not found, creates a blob and adds filename and hash to IndexMap
 
+### Rm():
+Removes the files with String filename from the CWD and from the index file
+#### input variable
+* String filename: 
 
+#### specs
+* checks to see if filename is a file in the current working directory using Repository.inCWD()
+* deletes file with the same filename in CWD
+* loads current index in index object
+* Using getIndexMap() gets current index map and uses indexMap.remove("filename" to remove file from index
+* updates index by doing saveIndex()
 
+### Log():
+Prints out all past commits within the same branch. Displays the commit hash, Date and message
+#### specs 
+* load the most recent commit using loadcommit() and getMostRecent()
+* recursively iterates to each parent until first commit. 
+  * if merged, prints shortened for both parents
+* prints out commit from most recent to first
 
-
-## Algorithms
-#### Repository Class
-1. init():  Checks if the current working directory has a /.gitlet directory.
-   Creates the necessary folders and files for git to operate. 
-  If current folder is not intialized, creates a new .gitlet directory and 2
-  subdirectories "Objects", "Dirs". Objects stores all files including blobs, 
-  and commits in respective subdirectories, Dirs stores the name of all branches.
-  Creates the intial commit file and stores it into objects after hashing them. 
-  Creates a subdirectory in Dir for master branch that points to the first commit.
-  Creates a file  "HEAD" in ./git Writes the string of the current path to current branch
-  Creates an empty index file in /.gitlet
-2. commit(): Checks the index to see if all files in the working directory match the files added in 
-the staging directory. Iterate through every hash in index to check /.git /object /objects / HASH exists.
-If it does not, print 
-error message " commit not posible xx.file... unmerged". If index matches with working directory, 
-we will keep the loaded index file object saved to disk. We will then create a commit object that points to the obects found 
-in the index. We will then update the current branch to have the SHA-1 of the latest commit.
-   1. Helper
-   2. After adding all blob files from the index, it will see if there are any unchanged blob files from previous commits
-   and  add the hashes and paths to the current commitTree. It will compare previous commit's blobs and see if objects 
-   tracked at the current pathway are the same SHA hash. If it is, then it will add that hash to commitTree
-   3. updateCurrentBranch(): finds the current branch your head pointer is looking at and change the file found in the branch
-   to be the current SHA-1 HASH of the latest commit.
-3. Add: Adds file to index if a file is modified or previously unadded
-   1. Takes input in main with Gitlet.add as arg[0] and filename as arg[1] and passes argument to repository.add()
-   2. load any current index using index.load()
-   3. Get the hash of the file
-   4. Compares sha-1 hash and sees if any files contain that sha-1 hash
-   5. if not, create blob. Add to index
 ## Persistence
+
 #### Repository.add()
 1. Write blobs to disks. After a file is added to the staging area we will need will
 need to save the files to disk. We first will need to calculate the SHA-1 hash. We then create a blob
@@ -97,7 +121,7 @@ Once all hashes have been added, Using Utils.writeContents() we can serialize an
 The blog will be stored as an index file in /.git/ objects / blobs
 3. Writing commits to disk. Since the class is serializable after object is created, use saveCommit() to convert
 to stream of bits saved in the ./gitlet/objects/commit folder. Named after the SHA-1 Hash of the commit. 
-4. Writing Master branch to disk
+4. Writing Master branch to disk. Write String to bits using Utils.writeContents
 5. Writing Head to disk. Using Utils.
 
     
