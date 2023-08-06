@@ -24,36 +24,39 @@ public class Index implements Serializable {
 
     public void addToIndex(String fileName) {
         File CWDFilePath = Utils.join(Repository.CWD, fileName);
+        if (!CWDFilePath.exists()) {
+            System.out.println("File not found in current working directory.");
+            return;
+        }
+
+
         // calc hash for CWD file
         String CWDfileSHA = Utils.sha1(Utils.readContents(CWDFilePath));
         Commit commit = Commit.getCurrentCommit(); // last commit
 
         // check if there was ever a previous version of this file before
         // if not create a new blob and store add to index
-        List<String> currentBlobList = Utils.plainFilenamesIn(Repository.BLOBS_DIR);
-        if (!currentBlobList.contains(CWDfileSHA)) {
-            //Blob blob = new Blob(fileName);
-            indexMap.put(fileName, CWDfileSHA);
-        }
+//        List<String> currentBlobList = Utils.plainFilenamesIn(Repository.BLOBS_DIR);
+//        if (!currentBlobList.contains(CWDfileSHA)) {
+//            indexMap.put(fileName, CWDfileSHA);
+//        }
 
-        // check if file was not in last commit but blob previously created
+        // check if previously not found in commit
         // add to index
-        else if (!commit.blob.containsKey(fileName)) {
+        if (!commit.blob.containsKey(fileName) ) {
             indexMap.put(fileName, CWDfileSHA);
         }
 
-        // if found in commit, compare content
-        else if (commit.blob.get(fileName) == CWDfileSHA) {
-            // compare HASHes. If same, check if found in added to index and remove
-            if (indexMap.containsKey(fileName)) {
+        // check if file is tracked in previous commit
+        else  {
+            // if the item is staged as added compare SHA of last commit's blob to CWD file. If same, unstage for addition
+            if (indexMap.containsKey(fileName) && indexMap.get(fileName) == CWDfileSHA) {
                 indexMap.remove(fileName);
             }
-        }
-
-        // if the file in CWD is added to index but has a different Hash than the one in index, update
-        else if (indexMap.containsKey(fileName) && indexMap.get(fileName) != CWDfileSHA) {
-            // update the index map with new hash
-            indexMap.put(fileName, CWDfileSHA);
+            // if hashes are not the same, stage the file for additon
+            else {
+                indexMap.put(fileName, CWDfileSHA);
+            }
         }
 
         saveIndex();
