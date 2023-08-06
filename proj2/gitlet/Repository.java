@@ -117,14 +117,17 @@ public class Repository {
         Index index = Index.loadIndex();
         if (index.getIndexMap().isEmpty() && index.getStagedForRemoval().isEmpty()) {
                 System.out.println("No changes added to the commit.");
+                return;
         }
         // check if we have a commit message
         else if (message == null) {
             System.out.println("Please enter a commit message.");
+            return;
         }
 
+        // get previous commit hash and create a new commit object
         String currentParent = Commit.getCurrentCommit().getHash();
-        Commit commit = new Commit(currentParent, message);
+        Commit commit = new  Commit(currentParent, message);
     }
 
     // if file found, removes file from CWD and index
@@ -199,7 +202,7 @@ public class Repository {
 
     // prints out all current information of git at the time
     public static void status() {
-        String currentBranch = Utils.readContentsAsString(Repository.HEAD_FILE);
+        String currentBranch = Branch.getCurrentBranchName();
         // print the branches. Current branch *
         List<String> branches = Utils.plainFilenamesIn(Repository.REF_DIR);
         System.out.println("=== Branches ===");
@@ -247,27 +250,35 @@ public class Repository {
         Map<String, String> CWDmap = CWDtoSHA();
         Commit commit = Commit.getCurrentCommit();
 
+        // iterate through each blob from the last commit
         for (String blob : commit.blob.keySet()) {
             // if file in previous commit and in CWD but different SHA and not staged
-            if (inCWD(blob) && commit.getBlobSHA(blob).equals(CWDmap.get(blob))
+            if (inCWD(blob) && !commit.getBlobSHA(blob).equals(CWDmap.get(blob))
             && !indexMap.containsKey(blob)) {
-                System.out.print(blob + " (modified)");
+                System.out.print(blob + " (modified) commit");
             }
-            //not staged to be removed, but tracked and deleted from CWD
+            // if tracked in last commit, not staged to be removed,  and deleted from CWD
             List<String> stagedRemoved = index.getStagedForRemoval();
             // not staged and not in CWD
-            if (!stagedRemoved.contains(blob)  && !inCWD(blob)) {
+            if (commit.blob.containsKey(blob) && !stagedRemoved.contains(blob)  && !inCWD(blob)) {
                 System.out.print(blob + " (deleted)");
             }
 
         }
-        // staged for add but SHA is different in index and CWD
+
+        // iterate thorugh staged items assume every item is staged since iterating through set of staged files
         for (String file : indexMap.keySet()) {
-            if (inCWD(file) && !indexMap.get(file).equals(CWDmap.get(file))) {
-                System.out.println(file +  " (modified)");
+
+            // staged to add but file is deleted from CWD
+            if (inCWD(file) ) {
+                // prints modified if CWD and staging directory HASH is different
+                if (!indexMap.get(file).equals(CWDmap.get(file))) {
+                    System.out.println(file +  " (modified) index");
+                }
+
             }
             // staged add but deleted CWD
-            if (!inCWD(file)) {
+            else {
                 System.out.println(file + " (deleted)");
             }
         }
