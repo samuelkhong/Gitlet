@@ -34,29 +34,30 @@ public class Index implements Serializable {
         String CWDfileSHA = Utils.sha1(Utils.readContents(CWDFilePath));
         Commit commit = Commit.getCurrentCommit(); // last commit
 
-        // check if there was ever a previous version of this file before
-        // if not create a new blob and store add to index
-//        List<String> currentBlobList = Utils.plainFilenamesIn(Repository.BLOBS_DIR);
-//        if (!currentBlobList.contains(CWDfileSHA)) {
-//            indexMap.put(fileName, CWDfileSHA);
-//        }
-
-        // check if previously not found in commit
-        // add to index
-        if (!commit.blob.containsKey(fileName) ) {
-            indexMap.put(fileName, CWDfileSHA);
+        // Check to make sure you don't add same exact file multiple times
+        if (indexMap.containsKey(fileName) && indexMap.get(fileName).equals(CWDfileSHA)) {
+            System.out.println("File already added");
+            return;
         }
 
-        // check if file is tracked in previous commit
-        else  {
-            // if the item is staged as added compare SHA of last commit's blob to CWD file. If same, unstage for addition
-            if (indexMap.containsKey(fileName) && indexMap.get(fileName) == CWDfileSHA) {
+        // check if file was previously commited
+        if (commit.blob.containsKey(fileName)) {
+            // removes blob if the smae
+            if (commit.blob.get(fileName).equals(CWDfileSHA)) {
+                System.out.println("File removed since same as previous commit");
                 indexMap.remove(fileName);
             }
-            // if hashes are not the same, stage the file for additon
+            // if file in previous commit but doesn't have same HASH ie MODIFIED FILE then add it to index list
             else {
+                System.out.println("file in previous commit but doesn't have same HASH");
                 indexMap.put(fileName, CWDfileSHA);
             }
+        }
+
+        // if file not in previous commit and not already added to index, then can stage to index for additon
+        else {
+            indexMap.put(fileName, CWDfileSHA);
+            System.out.println("file not in previous commit and not already added to index");
         }
 
         saveIndex();
