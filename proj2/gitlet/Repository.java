@@ -361,39 +361,49 @@ public class Repository {
 
         File branchFilePath = Utils.join(Repository.REF_DIR, branchName);
         String commitHash = Utils.readContentsAsString(branchFilePath); // gets the commit ID
+
         // load the commit of the specific branch
-        Commit commit = Commit.loadCommit(commitHash); // commit to be loaded
+        branchCheckoutHelper(commitHash);
+
+        // change the HEAD to point to new branch
+        Utils.writeContents(Repository.HEAD_FILE, branchFilePath.getPath());
+    }
+
+    // assist in Branch checkout. Checks if any currently track file is up to date and committed. Removes any files in
+    // the CWD that aren't part of the commit being checked out and clears the stagign area.
+    private  static void branchCheckoutHelper(String commitHash) {
+
+        // load the commit of the specific branch
+        Commit commitToBeLoaded = Commit.loadCommit(commitHash); // commit to be loaded
+        Commit lastCommit = Commit.getCurrentCommit(); // most recent commit in the current branch
         Map<String, String> CWDFiles = CWDtoSHA();
 
         // check if any files are overwritten when loading the new commit. If so, check if there is a
         // saved version of the file. If file is not currently tracked, print error message and exit."
-        for (String file : commit.blob.keySet()) {
-            if (CWDFiles.containsKey(file) && !commit.blob.get(file).equals(CWDFiles.get(file))) {
+        for (String file : lastCommit.blob.keySet()) {
+            if (CWDFiles.containsKey(file) && !lastCommit.blob.get(file).equals(CWDFiles.get(file))) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+
                 return;
             }
         }
 
-        // delete any file that is not the previous commit
+        // delete any file that is not the  commit to be loaded
         for (String file : CWDFiles.keySet()) {
             // if file is not found, delete
-            if (!commit.blob.containsKey(file)) {
+            if (!commitToBeLoaded.blob.containsKey(file)) {
                 File unwantedFile = Utils.join(CWD, file);
                 unwantedFile.delete();
             }
-            // otherwise if file is found in commit to be loaded, update file contents based on previous blob
-            else {
-                // checkout helper overwrites content of the file.
-                checkoutHelper(commit, file);
-
-            }
         }
+        // iterate through commitToBeLoaded's blobs and add them to CWD
+        for (String blob : commitToBeLoaded.blob.keySet()) {
+            checkoutHelper(commitToBeLoaded, blob);
+        }
+
 
         // clear the index.
         Index.clearIndex();
-
-        // change the HEAD to point to new branch
-        Utils.writeContents(Repository.HEAD_FILE, branchFilePath.getPath());
     }
 
     // creates new branch at the current HEAD pointer location
@@ -439,21 +449,9 @@ public class Repository {
             return;
         }
 
-        // get latest commit from current branch
-        Commit currentBranchCommit = Commit.getCurrentCommit();
-        List<String> CWD = Utils.plainFilenamesIn(Repository.CWD);
-        //compare CWD against past commit. If  unadded files found, display warning and exit
-        for (String file : CWD) {
-            if (!currentBranchCommit.blob.containsKey(file)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-                return;
-            }
-        }
-
-        // move current branch and HEAD to the specific commit
-        String currentBranch = Branch.getCurrentBranchName();
+        branchCheckoutHelper(commitID);
+        // change update the branch to point to the current commit
         Branch.updateBranchPosition(Branch.getCurrentBranchName(), commitID);
-        checkoutBranch(currentBranch);
     }
 
     public static void merge(String otherBranch) {
