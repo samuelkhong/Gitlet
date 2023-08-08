@@ -255,7 +255,7 @@ public class Repository {
             // if file in previous commit and in CWD but different SHA and not staged
             if (inCWD(blob) && !commit.getBlobSHA(blob).equals(CWDmap.get(blob))
             && !indexMap.containsKey(blob)) {
-                System.out.print(blob + " (modified) commit");
+                System.out.print(blob + " (modified)");
             }
             // if tracked in last commit, not staged to be removed,  and deleted from CWD
             List<String> stagedRemoved = index.getStagedForRemoval();
@@ -273,7 +273,7 @@ public class Repository {
             if (inCWD(file) ) {
                 // prints modified if CWD and staging directory HASH is different
                 if (!indexMap.get(file).equals(CWDmap.get(file))) {
-                    System.out.println(file +  " (modified) index");
+                    System.out.println(file +  " (modified)");
                 }
 
             }
@@ -301,28 +301,24 @@ public class Repository {
 
 
 
-    // replaces files in CWD with checkout files. 1 of 3 options
-    private static void checkoutSelector(String input) {
-        // if string input matches branch name then
-        List<String> branches =  Utils.plainFilenamesIn(REF_DIR);
-        if (branches.contains(input)) {
-            checkoutBranch(input);
-        }
-        else {
-            checkoutFile(input);
-        }
-    }
-
     // replaces the file in CWD with the file from headcommit
     public static void checkoutFile(String filename) {
 
         Commit commit = Commit.getCurrentCommit();
         // if the previous commit has file, get hash of previous file
-        //checkoutHelper(commit, filename);
+        checkoutHelper(commit, filename);
     }
 
     // updates the file in CWD with a specific commitID
     public  static void checkoutCommitFile(String commitID, String filename) {
+
+        List<String> listOfCommits = Utils.plainFilenamesIn(COMMIT_DIR);
+        // check if commit ID exists. If fails, print error message. exits function
+        if (!listOfCommits.contains(commitID)) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+
         Commit commit = Commit.loadCommit(commitID);
         checkoutHelper(commit, filename);
     }
@@ -342,14 +338,34 @@ public class Repository {
             }
             Utils.writeContents(currentFilePath, Utils.readContents(blobPath));
         }
+        // print error if file not found in that commit
+        else {
+            System.out.println("File does not exist in that commit.");
+        }
     }
 
     // changes CWD to all files in that branch and make branch current branch HEAD
     public static void checkoutBranch(String branchName) {
+
+        // if found, check if input branch is the current Branch with HEAD ptr. If so, print error message. Exit
+        if (Branch.getCurrentBranchName().equals(branchName)) {
+            System.out.println("No need to checkout the current branch.");
+        }
+
         File branchFilePath = Utils.join(Repository.REF_DIR, branchName);
         String commitHash = Utils.readContentsAsString(branchFilePath); // gets the commit ID
         // load the commit of the specific branch
-        Commit commit = Commit.loadCommit(commitHash);
+        Commit commit = Commit.loadCommit(commitHash); // commit to be loaded
+        Map<String, String> CWDFiles = CWDtoSHA();
+
+        // check if any files are overwritten when loading the new commit. If so, check if there is a
+        // saved version of the file. If file is not currently tracked, print error message and exit."
+        for (String file : commit.blob.keySet()) {
+            if (CWDFiles.containsKey(file) && !commit.blob.get(file).equals(CWDFiles.get(file))) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                return;
+            }
+        }
 
         // add all blobs into the CWD
         for (String blob : commit.blob.keySet()) {
@@ -379,7 +395,7 @@ public class Repository {
     }
 
     public static void rmBranch(String branch) {
-        File branchPath = Utils.join(REF_DIR, branch);
+        File branchPath = Utils.join(REF_DIR, branch    );
         if (!branchPath.exists()) {
             System.out.println("branch with that name does not exist.");
         }
@@ -406,7 +422,7 @@ public class Repository {
         // get latest commit from current branch
         Commit currentBranchCommit = Commit.getCurrentCommit();
         List<String> CWD = Utils.plainFilenamesIn(Repository.CWD);
-        //compare CWD against past commit. If r unadded files found, display warning and exit
+        //compare CWD against past commit. If  unadded files found, display warning and exit
         for (String file : CWD) {
             if (!currentBranchCommit.blob.containsKey(file)) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
@@ -503,7 +519,6 @@ public class Repository {
                 Utils.writeContents(fileToBeUpdated, Utils.readContents(retrievedFile));
                 // stage the file to the commit
                 index.addToIndex(file);
-
             }
 
             // if file unmodified at split and current but not in other
@@ -512,13 +527,7 @@ public class Repository {
                 rm(file);
             }
         }
-
-
     }
-
-
-
-
 
     // will create file at pathway. If file already exists will delete and replace it with empty file
     // reduces the logic needed in try and catch files to a simplified form
@@ -551,7 +560,7 @@ public class Repository {
 
     // return a map of each blob and a hash
     public static Map<String, String> CWDtoSHA() {
-        List<String> CWD = Utils.plainFilenamesIn(Repository.CWD);
+        List<String> CWD = Utils.plainFilenamesIn(Repository.CWD); // all brna
         Map<String, String> CWDMap = new HashMap<String, String>();
 
         // Calculate every SHA value in CWD and add to CWDtoHASH map
@@ -562,6 +571,8 @@ public class Repository {
         }
         return CWDMap;
     }
+
+
 
 
 }
