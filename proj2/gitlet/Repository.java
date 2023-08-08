@@ -346,10 +346,17 @@ public class Repository {
 
     // changes CWD to all files in that branch and make branch current branch HEAD
     public static void checkoutBranch(String branchName) {
+        // check if current Branch exists. If false print error and exit
+        List<String> branchList = Utils.plainFilenamesIn(REF_DIR);
+         if (!branchList.contains(branchName)) {
+             System.out.println("No such branch exists.");
+             return;
+         }
 
         // if found, check if input branch is the current Branch with HEAD ptr. If so, print error message. Exit
-        if (Branch.getCurrentBranchName().equals(branchName)) {
+        else if (Branch.getCurrentBranchName().equals(branchName)) {
             System.out.println("No need to checkout the current branch.");
+            return;
         }
 
         File branchFilePath = Utils.join(Repository.REF_DIR, branchName);
@@ -367,10 +374,23 @@ public class Repository {
             }
         }
 
-        // add all blobs into the CWD
-        for (String blob : commit.blob.keySet()) {
-            checkoutHelper(commit, blob);
+        // delete any file that is not the previous commit
+        for (String file : CWDFiles.keySet()) {
+            // if file is not found, delete
+            if (!commit.blob.containsKey(file)) {
+                File unwantedFile = Utils.join(CWD, file);
+                unwantedFile.delete();
+            }
+            // otherwise if file is found in commit to be loaded, update file contents based on previous blob
+            else {
+                // checkout helper overwrites content of the file.
+                checkoutHelper(commit, file);
+
+            }
         }
+
+        // clear the index.
+        Index.clearIndex();
 
         // change the HEAD to point to new branch
         Utils.writeContents(Repository.HEAD_FILE, branchFilePath.getPath());
@@ -395,7 +415,7 @@ public class Repository {
     }
 
     public static void rmBranch(String branch) {
-        File branchPath = Utils.join(REF_DIR, branch    );
+        File branchPath = Utils.join(REF_DIR, branch);
         if (!branchPath.exists()) {
             System.out.println("branch with that name does not exist.");
         }
