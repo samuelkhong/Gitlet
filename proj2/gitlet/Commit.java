@@ -44,8 +44,6 @@ public class Commit implements Serializable {
         return message;
     }
 
-
-    /* TODO: fill in the rest of this class. */
     public Commit(String parent, String message) {
         this.message = message;
         this.parent = new ArrayList<String>();

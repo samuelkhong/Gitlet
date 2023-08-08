@@ -40,7 +40,7 @@ public class Blob implements Serializable {
         }
 
         // create path to blob file
-        File blobFile = Utils.join(Repository.BLOBS_DIR, this.hash); // name of file of specific dog
+        File blobFile = Utils.join(Repository.BLOBS_DIR, this.hash); // name of file of specific blob
 
             // check if commit has been created before
             if (!blobFile.exists()) {
@@ -48,7 +48,6 @@ public class Blob implements Serializable {
             }
 
             // Write blob to the file as byte array
-//            Utils.writeObject(blobFile, this);
             Utils.writeContents(blobFile, content);
             System.out.println("blob saved successfully.");
     }

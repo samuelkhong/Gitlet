@@ -43,6 +43,7 @@ public class Branch {
         }
     }
 
+    // returns the name of the curent branch that has HEAD pointed to it
     public static String getCurrentBranchName() {
         File file = new File (Utils.readContentsAsString(Repository.HEAD_FILE));
         return file.getName();

@@ -43,6 +43,32 @@ public class Main {
             case "find":
                 Repository.find(args[1]);
                 break;
+
+            case "branch":
+                Repository.branch(args[1]);
+                break;
+
+            case "checkout":
+                // select branch input
+                if (args.length == 2) {
+                    Repository.checkoutBranch(args[1]);
+                }
+                // select checkout file
+                else if (args.length == 3) {
+                    Repository.checkoutFile(args[2]);
+                }
+                else if (args.length == 4) {
+                    Repository.checkoutCommitFile(args[1], args[3]);
+                }
+                break;
+
+            case "rm-branch":
+                Repository.rmBranch(args[1]);
+                break;
+
+            case "reset":
+                Repository.reset(args[1]);
+                break;
         }
     }
 }
