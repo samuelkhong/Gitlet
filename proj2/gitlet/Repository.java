@@ -6,21 +6,16 @@ import java.util.*;
 
 import static gitlet.Utils.*;
 
-// TODO: any imports you need here
-
 /** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
+ * Stores a library of functions used Main() to manage a gitlet repository
+ * as well as helper functions used by the Repository class
  *
  *  @author Samuel Khong
  */
 public class Repository {
     /**
-     * TODO: add instance variables here.
      *
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
+     * A list of Pathways to different commonly used Files and Directories used in Gitlet
      */
 
     /** The current working directory. */
@@ -61,10 +56,7 @@ public class Repository {
      * the string written to disk as bits of the most recent commit hash of that branch. */
 
 
-    /** Found in /.gitlet Holds the path to the currently selected branch as a string*/
 
-
-    /* TODO: fill in the rest of this class. */
 
     /* checks if ./gitlet exists. If not, creates ./gitlet and all subdirectories.
     *  sets up sentinel commit and sets HEAD pointer and Master branch*/
@@ -92,26 +84,24 @@ public class Repository {
             Utils.writeContents(Repository.HEAD_FILE, HEAD_PTR);
 
             // create sentinel commit and save it
-            Commit sentinel = new Commit(null, null);
+            Commit sentinel = new Commit(null, null, null);
             sentinel.saveCommit();
         }
 
         // if init is called while the /.gitlet directory already exist
         else {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
-
         }
     }
 
     // Adds new and modified files into the staging directory (Index File). Creates a new blob object for each new file
     public static void add(String fileName) {
         // check to see if this file is found in the current working directory
-
         Index index = Index.loadIndex();
         index.addToIndex(fileName);
     }
 
-    //  dss
+    // Creates a commit object as well as saves an files staged for addtion and Removes files from CWD staged for deletion
     public static void commit(String message) {
         // check if anything is staged to add or delete
         Index index = Index.loadIndex();
@@ -127,10 +117,10 @@ public class Repository {
 
         // get previous commit hash and create a new commit object
         String currentParent = Commit.getCurrentCommit().getHash();
-        Commit commit = new  Commit(currentParent, message);
+        Commit commit = new  Commit(currentParent, null, message);
     }
 
-    // if file found, removes file from CWD and index
+    //removes file from CWD and stages them for deletion
     public static void rm(String filename) {
         Index index = Index.loadIndex(); // current staging directory
         Commit commit = Commit.getCurrentCommit(); // last commit
@@ -149,6 +139,7 @@ public class Repository {
         }
     }
 
+    // prints a list of all past commits leading from the current commit of HEAD
     public static void log() {
         // get the commit HEAD is pointing to
         Commit commit = Commit.getCurrentCommit();
@@ -159,19 +150,21 @@ public class Repository {
             if (commit.getParent().get(0) == null) {
                 return;
             }
-            List<String> parent = commit.getParent();
-            commit = Commit.loadCommit(parent.get(0));
+            // Move the current commit to the first parent.
+            commit = Commit.loadCommit(commit.getParent().get(0));
         }
     }
+
+    // helper function for log(). Helps prints commit Information
     private static void printCommitInfo(Commit commit) {
         System.out.println("===");
         System.out.println("commit " + commit.getHash());
         // if has more than 1 parent, print merge specific info both parents
-        if (commit.getParent().size() > 1) {
+        if (commit.getParent().get(1) != null) {
             List<String> parents = commit.getParent();
             String parent1 = parents.get(0);
             String parent2 = parents.get(1);
-            System.out.println("Merge: " + parent1.substring(0, 6) + " " + parent2.substring(0, 6) + "/n");
+            System.out.println("Merge: " + parent1.substring(0, 6) + " " + parent2.substring(0, 6));
         }
 
         System.out.println(commit.getTimeStamp());
@@ -299,8 +292,6 @@ public class Repository {
         System.out.println();
     }
 
-
-
     // replaces the file in CWD with the file from headcommit
     public static void checkoutFile(String filename) {
 
@@ -309,7 +300,7 @@ public class Repository {
         checkoutHelper(commit, filename);
     }
 
-    // updates the file in CWD with a specific commitID
+    // updates the file in CWD with a specific commitID version of a file
     public  static void checkoutCommitFile(String commitID, String filename) {
 
         List<String> listOfCommits = Utils.plainFilenamesIn(COMMIT_DIR);
@@ -323,6 +314,7 @@ public class Repository {
         checkoutHelper(commit, filename);
     }
 
+    // helper function used by
     private static void checkoutHelper(Commit commit, String filename) {
         // check if file is tracked at the commit specified
         if (commit.blob.containsKey(filename)) {
@@ -424,6 +416,7 @@ public class Repository {
         Utils.writeContents(newBranchPath, currentBranch);
     }
 
+    // removes a specific branch (deletes pointer to a commit). The commit associated with the branch will remain unchanged
     public static void rmBranch(String branch) {
         File branchPath = Utils.join(REF_DIR, branch);
         if (!branchPath.exists()) {
@@ -454,15 +447,18 @@ public class Repository {
         Branch.updateBranchPosition(Branch.getCurrentBranchName(), commitID);
     }
 
+    // combines the most recent file between 2 branches into CWD and creates merge commit
+    // if files are both modified in both branches, merge conflict will occur and exit
     public static void merge(String otherBranch) {
         // exit if have items staged
         Index index = Index.loadIndex();
         if (!index.getIndexMap().isEmpty()) {
             System.out.println("You have uncommitted changes.");
+            return;
         }
 
         // exit if otherBranch == currentBranch
-        else if (otherBranch == Branch.getCurrentBranchName()) {
+        else if (otherBranch.equals(Branch.getCurrentBranchName())) {
             System.out.println("Cannot merge a branch with itself.");
             return;
         }
@@ -473,10 +469,16 @@ public class Repository {
             return;
         }
         // get all files as a map from common ancestor, current branch and otherbranch
-        String commonAncestor = Branch.latesCommonAncestor(otherBranch);
+        String commonAncestor = Branch.latestCommonAncestor(otherBranch); // gets the commit ID of the latest shared ancestor
+        // no common ancestor found exit. Print error message
+        if (commonAncestor == null) {
+            System.out.println("no common ancestor");
+            return;
+        }
+
         Map<String, String> currentBranchFiles = Commit.loadCommit(Branch.getHeadCommit()).blob;
         Map<String, String> otherBranchFiles = Commit.loadCommit(Branch.getBranchCommit(otherBranch)).blob;
-        Map<String, String> commonAncestorFiles = Commit.loadCommit(Branch.getBranchCommit(commonAncestor)).blob;
+        Map<String, String> commonAncestorFiles = Commit.loadCommit(commonAncestor).blob;
 
         // get a set of all files from the common ancestor and the two branches
         Set<String> allFiles = new HashSet<String>();
@@ -491,45 +493,63 @@ public class Repository {
         for (String file : allFiles) {
             // get all SHA values for each file
             String ancestorSHA = commonAncestorFiles.get(file);
+            System.out.println("Ancestor files: " + ancestorSHA);
+
             String currentBranchSHA = currentBranchFiles.get(file);
+            System.out.println("HEAD files " + currentBranchSHA);
+
             String otherBranchSHA = otherBranchFiles.get(file);
+            System.out.println("Other File" + otherBranchSHA);
 
             // if file is present at split, head and other
-            if (ancestorSHA != null && currentBranchFiles != null && otherBranchFiles != null) {
+            if (ancestorSHA != null && currentBranchSHA != null && otherBranchSHA != null) {
                 // if  modified in other but not in HEAD. Add content from other into working directory
                 if (ancestorSHA.equals(currentBranchSHA) && !ancestorSHA.equals(otherBranchSHA)) {
-                    // replacing CWD file with other file
-                    retrievedFile = Utils.join(BLOBS_DIR, otherBranchSHA);
-                    File fileToBeUpdated = Utils.join(CWD, file);
 
-                    // retrieve file from blobs and overwrite the file with same name in CWD
-                    Utils.writeContents(fileToBeUpdated, Utils.readContents(retrievedFile));
                     // stage the file
                     index.addToIndex(file);
+                    // add file to CWD
+                    checkoutCommitFile(Branch.getBranchCommit(otherBranch), file);
                 }
-                // if modified in head but not other,
-                else if (!ancestorSHA.equals(currentBranchSHA) && ancestorSHA.equals(otherBranchSHA)) {
-                    // takes head change, do not add
-                }
-                // if modified in head and other, but they head and other are equal
-                else if (!ancestorSHA.equals(currentBranchSHA) && !ancestorSHA.equals(otherBranchSHA)
-                         && currentBranchSHA.equals(otherBranchSHA)) {
-                    // do not merge. They are the same file. No need add
-                }
+
                 // if modified in head and other, but they head and other are not equal
                 else if (!ancestorSHA.equals(currentBranchSHA) && !ancestorSHA.equals(otherBranchSHA)
                         && !currentBranchSHA.equals(otherBranchSHA)) {
                     // display merge conflict and exit
                     System.out.println("Merge conflict");
+
+                    // get contents from HEAD file
+                    File headFile = Utils.join(CWD, file);
+                    String headFileContent = "";
+                    if (headFile.exists()) {
+                        headFileContent = Utils.readContentsAsString(headFile);
+                    }
+
+                    // get the file location for the other branch's file
+                    File otherFile = new File(BLOBS_DIR, otherBranchFiles.get(file));
+                    String otherFileContent = "";
+                    if (otherFile.exists()) {
+                        otherFileContent = Utils.readContentsAsString(otherFile);
+                    }
+
+                    String mergeConflictMessage = "<<<<<<< " + Branch.getCurrentBranchName() + '\n';
+                    mergeConflictMessage += headFileContent + '\n' + "=======\n";
+                    mergeConflictMessage += otherFileContent;
+                    mergeConflictMessage += ">>>>>>>\n";
+
+                    // create file and it to CWD with merge conflict message
+                    createNewFile(headFile); // overwrites the CWD file or creates file if doesn't exist
+                    Utils.writeContents(headFile, mergeConflictMessage);
+                    // stage it for addtion
+                    index.addToIndex(file);
                 }
             }
-            // if file not in split, not in other but in head
-            else if (ancestorSHA == null && currentBranchFiles != null && otherBranchFiles == null) {
-                // already in branch do not need to change
-            }
+
             // file not in split, not in current but in other
-            else if (ancestorSHA == null && currentBranchFiles == null && otherBranchFiles != null) {
-                // add file to index
+            else if (ancestorSHA == null && currentBranchSHA == null && otherBranchSHA != null) {
+                System.out.println("File not found in split or HEAD but added in other");
+
+                // add file from otherBranch to index
                 retrievedFile = Utils.join(BLOBS_DIR, otherBranchSHA);
                 File fileToBeUpdated = Utils.join(CWD, file);
 
@@ -537,14 +557,25 @@ public class Repository {
                 Utils.writeContents(fileToBeUpdated, Utils.readContents(retrievedFile));
                 // stage the file to the commit
                 index.addToIndex(file);
+
+                // load files to CWD
+                checkoutCommitFile(Branch.getBranchCommit(otherBranch), file);
             }
 
             // if file unmodified at split and current but not in other
-            else if (ancestorSHA != null && currentBranchSHA != null && otherBranchSHA == null) {
+            else if (ancestorSHA == null && currentBranchSHA == null && ancestorSHA != otherBranchSHA) {
+                // if the SHA is null, means the file was deleted in other
                 // stage file for removal
-                rm(file);
+                if (otherBranchSHA == null) {
+                    rm(file);
+                }
             }
         }
+
+        // create a new merge commit
+        String parent1 = Branch.getHeadCommit();
+        String parent2 = Branch.getBranchCommit(otherBranch);
+        Commit mergeCommit = new Commit(parent1, parent2,"Merged " + otherBranch + " into " + Branch.getCurrentBranchName() + ".");
     }
 
     // will create file at pathway. If file already exists will delete and replace it with empty file
@@ -556,7 +587,6 @@ public class Repository {
             if (!filePath.delete()) {
             }
         }
-
         try {
             if (filePath.createNewFile()) {
                 System.out.println("File created successfully.");
