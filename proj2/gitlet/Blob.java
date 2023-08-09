@@ -22,7 +22,6 @@ public class Blob implements Serializable {
 
             // creates a hashValue used to identify blob from contents of blob
             this.hash = Utils.sha1(content);
-            saveBlob();
         }
     }
 
@@ -32,7 +31,7 @@ public class Blob implements Serializable {
     }
 
 
-    private void saveBlob() {
+    public void saveBlob() {
         // Check if Blob Directory exists if not exits
         if (!Repository.BLOBS_DIR.isDirectory()) {
             System.out.println("Error directory  /.gitlet/objects/blobs not found.");
