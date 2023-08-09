@@ -15,6 +15,7 @@ public class Branch {
         return currentCommit;
     }
 
+    // return the commit ID of branchName
     public static String getBranchCommit(String branchName) {
         File branch = Utils.join(Repository.REF_DIR, branchName);
         if (!branch.exists()) {
@@ -50,26 +51,34 @@ public class Branch {
     }
 
     // returns the earliest shared commit between the current branch and the other branch
-    public static String latesCommonAncestor(String otherBranch) {
-        Set<String> currentBranchNodes = new HashSet<String>();
+    public static String latestCommonAncestor(String otherBranch) {
+
+        Set<String> ancestors = new HashSet<String>();
         String node = getHeadCommit(); // gets the current commitID of the latest node in the branch
-        Commit commit = Commit.loadCommit(node);
+        Commit currentBranch = Commit.loadCommit(node);
+        Commit commitPTR = currentBranch;
 
         // iterate through all commits until reaching root commit
         // store all commits from current branch into Set
-        while (commit.getParent().get(0) != null) {
-            currentBranchNodes.add(commit.getHash());
-            commit = Commit.loadCommit(commit.getParent().get(0)); // recursively advance by parent commit
+        while (commitPTR != null) {
+            ancestors.add(commitPTR.getHash());
+            for (String parent : commitPTR.getParent()) {
+                commitPTR = Commit.loadCommit(parent);
+            }
+        }
+        // Traverse the commit history of the given branch to find the split point
+        String otherBranchID = Branch.getBranchCommit(otherBranch);
+        Commit otherBranchPTR = Commit.loadCommit(otherBranchID);
+        while (otherBranchPTR != null) {
+            if (ancestors.contains(otherBranchPTR.getHash())) {
+                return otherBranchPTR.getHash(); // Found the split point
+            }
+            for (String parent : otherBranchPTR.getParent()) {
+                otherBranchPTR= Commit.loadCommit(parent);
+            }
         }
 
-        Commit branch2 = Commit.loadCommit(otherBranch);
-        // iterate through branch2 until root node.
-        // check if current branch nodes contains branch 2 hash. If not go to parent node of branch2
-        while (!currentBranchNodes.contains(branch2.getHash())) {
-            branch2 = Commit.loadCommit(branch2.getParent().get(0));
-        }
-        // once shared Hash found, return most common ancestor
-        return  branch2.getHash();
+        return null; // No split point found
     }
 
     public static Boolean branchExist(String branch) {
