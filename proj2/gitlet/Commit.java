@@ -44,10 +44,22 @@ public class Commit implements Serializable {
         return message;
     }
 
-    public Commit(String parent, String message) {
+
+    // Commit constructor. Creates commit object, saves blobs, clears index, and saves commit into system
+    // constructor for one parent
+    public Commit(String parent1, String parent2, String message) {
         this.message = message;
         this.parent = new ArrayList<String>();
-        this.parent.add(0, parent);
+
+        this.parent.add(parent1);
+
+        this.parent.add(parent1);
+        // add second parent only if parent 2 is not null
+        if (parent2 != null)  {
+            this.parent.add(parent2);
+        }
+
+
 
         long currentTimeMillis = System.currentTimeMillis();
 
@@ -68,9 +80,19 @@ public class Commit implements Serializable {
             // set last commit blobs to this commit's blobs
             this.blob = lastCommit.blob;
 
+            // get a list of all previous blobs
+            List<String> blobList = Utils.plainFilenamesIn(Repository.BLOBS_DIR);
+
             // iterate through stage files to be added and creates and add blobs to current commit
             for (String file : stagedToAdd.keySet()) {
+                // Create a Blob object for each file that calculates the SHA hash
                 Blob blob = new Blob(file);
+
+                // if Blob is not currently added to the blob directory save the blob to directory
+                if (!blobList.contains(blob.getBlobHash())) {
+                    blob.saveBlob();
+                }
+
                 // add the newly created blob into the current blob list of the commit
                 this.blob.put(file, blob.getBlobHash());
             }
@@ -83,10 +105,20 @@ public class Commit implements Serializable {
             // clear out index after editing everything staged to add and delete
             Index.clearIndex();
 
-
             // create a SHA hash using all meta data found in commit
             String concatenatedBlobs =  sumBlobs(this.blob); // sums all the blobs into a large string
-            this.hash = Utils.sha1(name, timeStamp, message, concatenatedBlobs, parent);
+
+            // create a hash based on number of parents there are
+            // if parent2 == null, means this is a regular commit.
+            if (parent2 == null) {
+                this.hash = Utils.sha1(name, timeStamp, message, concatenatedBlobs, parent1);
+            }
+            // there are 2 parents and add parent2's ID to the SHA creation. Becomes a merge commit
+            else {
+                this.hash = Utils.sha1(name, timeStamp, message, concatenatedBlobs, parent1, parent2);
+            }
+
+
         }
         // first commit upon intialization. Creates sentinel commit
         else {
@@ -103,6 +135,8 @@ public class Commit implements Serializable {
         File currentBranch = new File(head);
         Utils.writeContents(currentBranch, this.hash);
     }
+
+    // commit constructor for more than one parent
 
 
     /* returns a concatenated string of all blob HASH values associated with a commit*/
