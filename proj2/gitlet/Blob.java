@@ -8,8 +8,7 @@ public class Blob implements Serializable {
     private String hash;
     private byte[] content;
 
-    // intializes blob and hashes content. Calls saveBlob to save hashed content under SHA1 hash in
-    // the /objects/blobs
+    // Creates blob objects by converting CWD file content to byte[]. Saves files named under their SHA-1 hash to disk under ./gitlet/objects/blobs
 
     Blob(String fileName) {
         //this.fileName = fileName;

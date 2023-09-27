@@ -8,7 +8,7 @@ import static gitlet.Utils.*;
 
 /** Represents a gitlet repository.
  * Stores a library of functions used Main() to manage a gitlet repository
- * as well as helper functions used by the Repository class
+ * as well as helper functions used by the Repository class.
  *
  *  @author Samuel Khong
  */
@@ -140,6 +140,7 @@ public class Repository {
     }
 
     // prints a list of all past commits leading from the current commit of HEAD
+    // follows the first parent of commits
     public static void log() {
         // get the commit HEAD is pointing to
         Commit commit = Commit.getCurrentCommit();
@@ -448,7 +449,7 @@ public class Repository {
     }
 
     // combines the most recent file between 2 branches into CWD and creates merge commit
-    // if files are both modified in both branches, merge conflict will occur and exit
+    // if files are both modified in both branches, merge conflict will occur
     public static void merge(String otherBranch) {
         // exit if have items staged
         Index index = Index.loadIndex();
@@ -488,8 +489,7 @@ public class Repository {
 
         // appropriately modify working directory with necessary files for merge. Stage additions and deletions.
 
-        File retrievedFile; // used to store files
-
+        File retrievedFile; // used to store file pathways  to blobs of otherBranch
         for (String file : allFiles) {
             // get all SHA values for each file
             String ancestorSHA = commonAncestorFiles.get(file);

@@ -63,6 +63,7 @@ public class Index implements Serializable {
         saveIndex();
     }
 
+    // writes an index object as a stream of bits to disk In the INDEX file found in CWD
     private void saveIndex() {
         Utils.writeObject(Repository.INDEX_FILE, this);
     }

@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
+// Library of functions that helps return the apropriate Branch or commit and helps
+// bundle manual manipulation of writing and retrieving Branches from program to disk.
 public class Branch {
 
     // returns the commit SHA of the current Branch
@@ -81,6 +83,7 @@ public class Branch {
         return null; // No split point found
     }
 
+    // pritns true of branch exists
     public static Boolean branchExist(String branch) {
         File file = Utils.join(Repository.REF_DIR, branch);
         if (file.exists()) {
