@@ -1,5 +1,5 @@
 # Gitlet
-is an implementation of a version-control system. It was a project inspired by CS61B's Gitlet Project. Gitlet is executed through a command-line interface. 
+is an implementation of a version-control system. Gitlet is executed through a command-line interface. 
 It allows multiple developers to work on the same project simultaneously, managing different versions of the code and merging their changes seamlessly. 
 Gitlet helps maintain a history of code revisions, making it easy to roll back to previous states and ensure a reliable and collaborative development process.
 
